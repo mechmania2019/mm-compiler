@@ -1,0 +1,19 @@
+{
+  "name": "mm-compiler",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.5.2",
+    "aws-sdk": "^2.203.0",
+    "execa": "^0.10.0",
+    "fs": "^0.0.1-security",
+    "fstream": "^1.0.11",
+    "micro": "^9.1.0",
+    "mm-authenticate": "mechmania2018/mm-authenticate",
+    "mm-schemas": "mechmania2018/mm-schemas",
+    "mongoose": "^5.0.7",
+    "node-uuid": "^1.4.8",
+    "unzip": "^0.1.11"
+  }
+}
