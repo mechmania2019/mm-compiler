@@ -11,6 +11,7 @@ const execa = require("execa");
 
 const RABBITMQ_URI = process.env.RABBITMQ_URI || "amqp://localhost";
 const COMPILER_QUEUE = `compilerQueue`;
+const STANCHION_QUEUE = `stanchionQueue`;
 const COMPILE_DIR = "/compile";
 
 const s3 = new AWS.S3({
@@ -27,6 +28,7 @@ async function main() {
   const conn = await amqp.connect(RABBITMQ_URI);
   const ch = await conn.createChannel();
   ch.assertQueue(COMPILER_QUEUE, { durable: true });
+  ch.assertQueue(STANCHION_QUEUE, { durable: true });
 
   console.log(`Listening to ${COMPILER_QUEUE}`);
   ch.consume(
@@ -40,7 +42,7 @@ async function main() {
 
       await mkdir(COMPILE_DIR);
       const data = s3
-        .getObject({ Key: id })
+        .getObject({ Key: `scripts/${id}` })
         .createReadStream()
         .pipe(tar.x({ C: COMPILE_DIR }));
 
@@ -55,10 +57,14 @@ async function main() {
         // Compress and save the files to s3
         console.log(`${id} - Uploading files to s3`);
         const data = await upload({
-          Key: id.replace(/scripts/, "compiled"),
+          Key: `compiled/${id}`,
           Body: tar.c({ gzip: true, cwd: COMPILE_DIR }, ["."]).pipe(through2())
         });
         console.log(`${id} - Uploaded to s3 (${data.Location})`);
+        
+        // Notify Stanchion
+        console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
+        ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), { persistent: true });
 
         // clear the COMPILE_DIR
         console.log(`${id} - Cleaning ${COMPILE_DIR}`);
