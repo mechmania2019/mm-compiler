@@ -1,4 +1,4 @@
 *
-index.js
-package.kson
-yarn.lock
+!index.js
+!package.json
+!yarn.lock

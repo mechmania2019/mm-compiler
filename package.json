@@ -11,8 +11,8 @@
     "fs": "^0.0.1-security",
     "fstream": "^1.0.11",
     "micro": "^9.1.0",
-    "mm-authenticate": "mechmania2018/mm-authenticate",
-    "mm-schemas": "mechmania2018/mm-schemas",
+    "mm-authenticate": "0.0.1",
+    "mm-schemas": "0.0.1",
     "mongoose": "^5.0.7",
     "node-uuid": "^1.4.8",
     "unzip": "^0.1.11"

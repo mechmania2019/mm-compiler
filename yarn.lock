@@ -304,25 +304,16 @@ mkdirp@0.5, "mkdirp@>=0.5 0":
   dependencies:
     minimist "0.0.8"
 
-mm-authenticate@mechmania2018/mm-authenticate:
-  version "1.0.0"
-  resolved "https://codeload.github.com/mechmania2018/mm-authenticate/tar.gz/3b4c1d35779dc3410fb8b6166891f882bed25cdd"
+mm-authenticate@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/mm-authenticate/-/mm-authenticate-0.0.1.tgz#68b69795b6dc2f0dbdac988f4779861af0e50acb"
   dependencies:
     micro "^9.1.0"
-    mm-schemas pranaygp/mm-schemas
+    mm-schemas "0.0.1"
 
-mm-schemas@mechmania2018/mm-schemas:
-  version "1.0.0"
-  resolved "https://codeload.github.com/mechmania2018/mm-schemas/tar.gz/b15ae41d5b9097d6af8ca6cdce05886c749df28f"
-  dependencies:
-    mongoose "^5.0.7"
-    mongoose-timestamp "^0.6.0"
-    uuid "^3.2.1"
-    validator "^9.4.1"
-
-mm-schemas@pranaygp/mm-schemas:
-  version "1.0.0"
-  resolved "https://codeload.github.com/pranaygp/mm-schemas/tar.gz/28ce3aeef693520abce276cd3f9d53e7ae6055c6"
+mm-schemas@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/mm-schemas/-/mm-schemas-0.0.1.tgz#e40a091ff74ae5d22076918f3572eeef52672ae2"
   dependencies:
     mongoose "^5.0.7"
     mongoose-timestamp "^0.6.0"
