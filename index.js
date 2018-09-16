@@ -29,6 +29,11 @@ async function main() {
   const ch = await conn.createChannel();
   ch.assertQueue(COMPILER_QUEUE, { durable: true });
   ch.assertQueue(STANCHION_QUEUE, { durable: true });
+  process.on('SIGTERM', async () => {
+    console.log('Got SIGTERM');
+    await ch.close()
+    conn.close()
+  });
 
   console.log(`Listening to ${COMPILER_QUEUE}`);
   ch.consume(
