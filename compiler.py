@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-import util
+# import util
 
 try:
     from server_info import server_info

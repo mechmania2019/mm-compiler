@@ -5,6 +5,7 @@ RUN yarn --production
 COPY . .
 
 FROM mhart/alpine-node:base-10
+RUN apk add --update --no-cache python
 WORKDIR /usr/src
 ENV NODE_ENV="production"
 COPY --from=base /usr/src .
