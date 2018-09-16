@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compiler
+  labels:
+    app: compiler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: compiler
+  template:
+    metadata:
+      labels:
+        app: compiler
+    spec:
+      containers:
+      - name: compiler
+        image: gcr.io/mechmania2017/compiler:latest
+        env:
+          - name: MONGO_URL
+            valueFrom:
+              secretKeyRef:
+                name: creds
+                key: mongo
+          - name: RABBITMQ_URI
+            valueFrom:
+              secretKeyRef:
+                name: creds
+                key: rabbitmq
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: creds
+                key: aws_access_key_id
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: creds
+                key: aws_secret_access_key

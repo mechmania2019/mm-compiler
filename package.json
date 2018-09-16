@@ -1,7 +1,8 @@
 {
   "name": "mm-compiler",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "deploy": "./deploy.sh"
   },
   "dependencies": {
     "amqplib": "^0.5.2",
