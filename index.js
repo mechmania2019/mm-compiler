@@ -10,6 +10,7 @@ const amqp = require("amqplib");
 const execa = require("execa");
 
 const RABBITMQ_URI = process.env.RABBITMQ_URI || "amqp://localhost";
+const DOCKER_CREDENTIALS_PATH='/gcr/mechmania2017-key.json'
 const COMPILER_QUEUE = `compilerQueue`;
 const STANCHION_QUEUE = `stanchionQueue`;
 const COMPILE_DIR = "/compile";
@@ -25,14 +26,21 @@ const chmod = promisify(fs.chmod);
 const readdir = promisify(fs.readdir);
 
 async function main() {
+  // Login to docker
+  // docker login -u _json_key --password-stdin https://gcr.io
+  const dockerLoginProc = execa("docker", ["login", "-u", "_json_key", "--password-stdin", "https://gcr.io"])
+  fs.createReadStream(DOCKER_CREDENTIALS_PATH).pipe(dockerLoginProc.stdin);
+  const { stdout, stderr } = await dockerLoginProc;
+  console.log(stdout, stderr)
+
   const conn = await amqp.connect(RABBITMQ_URI);
   const ch = await conn.createChannel();
   ch.assertQueue(COMPILER_QUEUE, { durable: true });
   ch.assertQueue(STANCHION_QUEUE, { durable: true });
-  process.on('SIGTERM', async () => {
-    console.log('Got SIGTERM');
-    await ch.close()
-    conn.close()
+  process.on("SIGTERM", async () => {
+    console.log("Got SIGTERM");
+    await ch.close();
+    conn.close();
   });
 
   console.log(`Listening to ${COMPILER_QUEUE}`);
@@ -52,21 +60,27 @@ async function main() {
         .pipe(tar.x({ C: COMPILE_DIR }));
 
       data.on("close", async () => {
+        const image = `gcr.io/mechmania2017/${id}`;
         // Compile the script
         console.log(`${id} - Compiling files at ${COMPILE_DIR}`);
         // TODO: Handle errors
-        await execa("python", ["compiler.py", COMPILE_DIR]);
-        await chmod(path.join(COMPILE_DIR, "run.sh"), 755);
-        console.log(await readdir(COMPILE_DIR));
+        const { stdout, stderr } = await execa("docker", [
+          "build",
+          COMPILE_DIR,
+          "-t",
+          image
+        ]);
+        console.log(stdout);
+        console.warn(stderr);
 
-        // Compress and save the files to s3
-        console.log(`${id} - Uploading files to s3`);
-        const data = await upload({
-          Key: `compiled/${id}`,
-          Body: tar.c({ gzip: true, cwd: COMPILE_DIR }, ["."]).pipe(through2())
-        });
-        console.log(`${id} - Uploaded to s3 (${data.Location})`);
-        
+        // Push to GCR
+        const { stdout: pushStdOut, stderr: pushStdErr } = await execa(
+          "docker",
+          ["push", image]
+        );
+        console.log(pushStdOut);
+        console.warn(pushStdErr);
+
         // Notify Stanchion
         console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
         ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), { persistent: true });
