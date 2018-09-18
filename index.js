@@ -37,6 +37,7 @@ async function main() {
   const ch = await conn.createChannel();
   ch.assertQueue(COMPILER_QUEUE, { durable: true });
   ch.assertQueue(STANCHION_QUEUE, { durable: true });
+  ch.prefetch(1);
   process.on("SIGTERM", async () => {
     console.log("Got SIGTERM");
     await ch.close();
