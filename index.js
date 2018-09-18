@@ -10,7 +10,7 @@ const amqp = require("amqplib");
 const execa = require("execa");
 
 const RABBITMQ_URI = process.env.RABBITMQ_URI || "amqp://localhost";
-const DOCKER_CREDENTIALS_PATH='/gcr/mechmania2017-key.json'
+const DOCKER_CREDENTIALS_PATH = "/gcr/mechmania2017-key.json";
 const COMPILER_QUEUE = `compilerQueue`;
 const STANCHION_QUEUE = `stanchionQueue`;
 const COMPILE_DIR = "/compile";
@@ -28,10 +28,16 @@ const readdir = promisify(fs.readdir);
 async function main() {
   // Login to docker
   // docker login -u _json_key --password-stdin https://gcr.io
-  const dockerLoginProc = execa("docker", ["login", "-u", "_json_key", "--password-stdin", "https://gcr.io"])
+  const dockerLoginProc = execa("docker", [
+    "login",
+    "-u",
+    "_json_key",
+    "--password-stdin",
+    "https://gcr.io"
+  ]);
   fs.createReadStream(DOCKER_CREDENTIALS_PATH).pipe(dockerLoginProc.stdin);
   const { stdout, stderr } = await dockerLoginProc;
-  console.log(stdout, stderr)
+  console.log(stdout, stderr);
 
   const conn = await amqp.connect(RABBITMQ_URI);
   const ch = await conn.createChannel();
@@ -73,6 +79,24 @@ async function main() {
         ]);
         console.log(stdout);
         console.warn(stderr);
+        const body = `
+==================================================
+
+stdout:
+${stdout}
+
+=================================================== 
+
+stderr:
+${stderr}
+`;
+        console.log(`${id} - Upload to s3 (${id})`);
+        const data = await upload({
+          Key: `compiled/${id}`,
+          Body: body
+        });
+        console.log(`${id} - Uploaded to s3 (${data.Location})`);
+        console.log(`${id} - Pushing image to GCR`);
 
         // Push to GCR
         const { stdout: pushStdOut, stderr: pushStdErr } = await execa(
