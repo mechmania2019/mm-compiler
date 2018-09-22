@@ -57,6 +57,10 @@ async function main() {
       console.log(`Got message`);
       const id = message.content.toString();
 
+      // clear the COMPILE_DIR
+      console.log(`${id} - Cleaning ${COMPILE_DIR}`);
+      await rimraf(COMPILE_DIR);
+
       // Extract and decompress
       console.log(`${id} - Extracting contents of script to ${COMPILE_DIR}`);
 
@@ -71,22 +75,34 @@ async function main() {
         // Compile the script
         console.log(`${id} - Compiling files at ${COMPILE_DIR}`);
         // TODO: Handle errors
-        const { stdout, stderr } = await execa("docker", [
-          "build",
-          COMPILE_DIR,
-          "-t",
-          image
-        ]);
+        let stdout = "";
+        let stderr = "";
+        let success = false;
+        try {
+          const proc = await execa("docker", [
+            "build",
+            COMPILE_DIR,
+            "-t",
+            image
+          ]);
+          stdout = proc.stdout;
+          stderr = proc.stderr;
+          success = true;
+        } catch (e) {
+          stdout = e.stdout;
+          success = false;
+          stderr = e.stderr;
+        }
         console.log(stdout);
         console.warn(stderr);
         const body = `
 ==================================================
-
+  
 stdout:
 ${stdout}
-
+  
 =================================================== 
-
+  
 stderr:
 ${stderr}
 `;
@@ -98,21 +114,21 @@ ${stderr}
         console.log(`${id} - Uploaded to s3 (${data.Location})`);
         console.log(`${id} - Pushing image to GCR`);
 
-        // Push to GCR
-        const { stdout: pushStdOut, stderr: pushStdErr } = await execa(
-          "docker",
-          ["push", image]
-        );
-        console.log(pushStdOut);
-        console.warn(pushStdErr);
+        if (success) {
+          // Push to GCR
+          const { stdout: pushStdOut, stderr: pushStdErr } = await execa(
+            "docker",
+            ["push", image]
+          );
+          console.log(pushStdOut);
+          console.warn(pushStdErr);
 
-        // Notify Stanchion
-        console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
-        ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), { persistent: true });
-
-        // clear the COMPILE_DIR
-        console.log(`${id} - Cleaning ${COMPILE_DIR}`);
-        await rimraf(COMPILE_DIR);
+          // Notify Stanchion
+          console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
+          ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), {
+            persistent: true
+          });
+        }
 
         ch.ack(message);
       });
