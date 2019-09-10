@@ -16,7 +16,7 @@ const STANCHION_QUEUE = `stanchionQueue`;
 const COMPILE_DIR = "/compile";
 
 const s3 = new AWS.S3({
-  params: { Bucket: "mechmania" }
+  params: { Bucket: "mechmania2019" }
 });
 
 const getObject = promisify(s3.getObject.bind(s3));
