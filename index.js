@@ -96,16 +96,16 @@ async function main() {
         console.log(stdout);
         console.warn(stderr);
         const body = `
-==================================================
-  
-stdout:
-${stdout}
-  
-=================================================== 
-  
-stderr:
-${stderr}
-`;
+        ==================================================
+          
+        stdout:
+        ${stdout}
+          
+        =================================================== 
+          
+        stderr:
+        ${stderr}
+        `;
         console.log(`${id} - Upload to s3 (${id})`);
         const data = await upload({
           Key: `compiled/${id}`,
@@ -122,6 +122,17 @@ ${stderr}
           );
           console.log(pushStdOut);
           console.warn(pushStdErr);
+
+          const { stdout: kubectlOut, stderr: kubectlErr } = await execa(
+            "kubectl",
+            ["run", id],
+            ["--generator", "deployment/apps.v1"],
+            ["--image", image],
+            ["--repliaces", 3]
+          );
+
+          console.log(kubectlOut);
+          console.warn(kubectlErr);
 
           // Notify Stanchion
           console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
