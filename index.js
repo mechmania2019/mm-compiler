@@ -138,7 +138,7 @@ async function main() {
           // );
 
           const { stdout: kubectlOut, stderr: kubectlErr } = await execa (
-            `kubectl run ${id} --generator=run-pod/v1 --image=${image} --replicas=${3}`
+            `kubectl run ${id} --generator=deployment/apps.v1 --image=${image} --replicas=${3}`
           )
 
           console.log(kubectlOut);
