@@ -116,10 +116,10 @@ async function main() {
           Body: body
         });
         console.log(`${id} - Uploaded to s3 (${data.Location})`);
-        console.log(`${id} - Pushing image to GCR`);
 
         if (success) {
           // Push to GCR
+          console.log(`${id} - Pushing image to GCR`);
           const { stdout: pushStdOut, stderr: pushStdErr } = await execa(
             "docker",
             ["push", image]
@@ -127,13 +127,19 @@ async function main() {
           console.log(pushStdOut);
           console.warn(pushStdErr);
 
-          const { stdout: kubectlOut, stderr: kubectlErr } = await execa(
-            "kubectl",
-            ["run", id],
-            ["--generator", "deployment/apps.v1"],
-            ["--image", image],
-            ["--repliaces", 3]
-          );
+          console.log(`${id} - Spinning up new Kubernetes deployment...`);
+          // const { stdout: kubectlOut, stderr: kubectlErr } = await execa(
+          //   "kubectl",
+          //   "run", 
+          //   id,
+          //   ["--generator", "deployment/apps.v1"],
+          //   ["--image", image],
+          //   ["--repliaces", 3]
+          // );
+
+          const { stdout: kubectlOut, stderr: kubectlErr } = await execa (
+            `kubectl run ${id} --generator=deployment/apps.v1 --image=${image} --replicas=${3}`
+          )
 
           console.log(kubectlOut);
           console.warn(kubectlErr);
