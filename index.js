@@ -144,11 +144,14 @@ async function main() {
 
             console.log(kubectlOut);
             console.warn(kubectlErr);
+
+            console.log(`Successfully pushed image ${image}`);
+
             console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
             ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), {
               persistent: true
             });
-            
+
           } catch (error) {
             console.log(error);
           }
