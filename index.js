@@ -106,6 +106,10 @@ async function main() {
         stderr:
         ${stderr}
         `;
+
+        // Pure debug; remove later
+        console.log(`Compiling ${id} resulted in Success: ${success}, with a body ${body}`);
+
         console.log(`${id} - Upload to s3 (${id})`);
         const data = await upload({
           Key: `compiled/${id}`,
