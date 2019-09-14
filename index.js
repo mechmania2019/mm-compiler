@@ -137,18 +137,24 @@ async function main() {
           //   ["--repliaces", 3]
           // );
 
-          const { stdout: kubectlOut, stderr: kubectlErr } = await execa (
-            `kubectl run ${id} --generator=deployment/apps.v1 --image=${image} --replicas=${3}`
-          )
+          try {
+            const { stdout: kubectlOut, stderr: kubectlErr } = await execa (
+              `kubectl run ${id} --generator=deployment/apps.v1 --image=${image} --replicas=3`
+            )
 
-          console.log(kubectlOut);
-          console.warn(kubectlErr);
+            console.log(kubectlOut);
+            console.warn(kubectlErr);
+            console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
+            ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), {
+              persistent: true
+            });
+            
+          } catch (error) {
+            console.log(error);
+          }
 
           // Notify Stanchion
-          console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
-          ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), {
-            persistent: true
-          });
+          
         }
 
         ch.ack(message);
