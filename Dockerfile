@@ -5,6 +5,7 @@
 
 FROM mhart/alpine-node:10 as base
 
+WORKDIR /usr/local/bin/kubectl
 COPY --from=wernight/kubectl usr/local/bin/kubectl usr/local/bin/kubectl
 
 WORKDIR /usr/src
