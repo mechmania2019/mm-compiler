@@ -138,6 +138,7 @@ metadata:
   name: bot-${id}
   labels:
     app: bot
+    bot: ${id}
 spec:
   replicas: 1
   selector:
