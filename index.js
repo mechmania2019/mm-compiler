@@ -14,6 +14,7 @@ const DOCKER_CREDENTIALS_PATH = "/gcr/mechmania2017-key.json";
 const COMPILER_QUEUE = `compilerQueue`;
 const STANCHION_QUEUE = `stanchionQueue`;
 const COMPILE_DIR = "/compile";
+const KUBECTL_PATH = path.join(__dirname, "kubectl"); // ./
 
 const s3 = new AWS.S3({
   params: { Bucket: "mechmania2019" }
@@ -108,7 +109,9 @@ async function main() {
         `;
 
         // Pure debug; remove later
-        console.log(`Compiling ${id} resulted in Success: ${success}, with a body ${body}`);
+        console.log(
+          `Compiling ${id} resulted in Success: ${success}, with a body ${body}`
+        );
 
         console.log(`${id} - Upload to s3 (${id})`);
         const data = await upload({
@@ -128,36 +131,45 @@ async function main() {
           console.warn(pushStdErr);
 
           console.log(`${id} - Spinning up new Kubernetes deployment...`);
-          // const { stdout: kubectlOut, stderr: kubectlErr } = await execa(
-          //   "kubectl",
-          //   "run", 
-          //   id,
-          //   ["--generator", "deployment/apps.v1"],
-          //   ["--image", image],
-          //   ["--repliaces", 3]
-          // );
+          const yamlSpec = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bot_${id}
+  labels:
+    app: bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bot
+  template:
+    metadata:
+      labels:
+        app: bot
+    spec:
+      containers:
+      - name: bot
+        image: ${image}
+        env:
+          - name: MM
+            value: true
+`;
+          const proc = execa(KUBECTL_PATH, ["apply", "-f", "-"]);
+          proc.stdin.write(yamlSpec);
+          proc.stdin.end();
+          const { stdout: kubectlOut, stderr: kubectlErr } = await proc;
+          console.log(kubectlOut);
+          console.warn(kubectlErr);
 
-          try {
-            const { stdout: kubectlOut, stderr: kubectlErr } = await execa (
-              `kubectl run ${id} --generator=deployment/apps.v1 --image=${image} --replicas=3`
-            )
+          console.log(`Successfully pushed image ${image}`);
 
-            console.log(kubectlOut);
-            console.warn(kubectlErr);
-
-            console.log(`Successfully pushed image ${image}`);
-
-            console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
-            ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), {
-              persistent: true
-            });
-
-          } catch (error) {
-            console.log(error);
-          }
+          console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
+          ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), {
+            persistent: true
+          });
 
           // Notify Stanchion
-          
         }
 
         ch.ack(message);
