@@ -114,17 +114,12 @@ async function main() {
         ${stderr}
         `;
 
-        // Pure debug; remove later
-        console.log(
-          `Compiling ${id} resulted in Success: ${success}, with a body ${body}`
-        );
-
-        console.log(`${id} - Upload to s3 (${id})`);
+        console.log(`${id} - Upload logs to s3 (${id})`);
         const data = await upload({
           Key: `compiled/${id}`,
           Body: body
         });
-        console.log(`${id} - Uploaded to s3 (${data.Location})`);
+        console.log(`${id} - Uploaded logs to s3 (${data.Location})`);
 
         if (success) {
           // Push to GCR
@@ -135,6 +130,7 @@ async function main() {
           );
           console.log(pushStdOut);
           console.warn(pushStdErr);
+          console.log(`${id} - Successfully pushed image to gcr`);
 
           console.log(`${id} - Spinning up new Kubernetes deployment...`);
           const yamlSpec = `
@@ -180,7 +176,8 @@ spec:
           const { stdout: kubectlOut, stderr: kubectlErr } = await proc;
           console.log(kubectlOut);
           console.warn(kubectlErr);
-          console.log(`Successfully pushed image ${image}`);
+          console.log(`Successfully started kubernetes deployment ${image}`);
+
           console.log("Getting IP address");
           const { stdout: ip } = await execa(KUBECTL_PATH, [
             "get",
