@@ -135,7 +135,7 @@ async function main() {
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: bot_${id}
+  name: bot-${id}
   labels:
     app: bot
 spec:
@@ -153,7 +153,7 @@ spec:
         image: ${image}
         env:
           - name: MM
-            value: true
+            value: "1"
 `;
           const proc = execa(KUBECTL_PATH, ["apply", "-f", "-"]);
           proc.stdin.write(yamlSpec);
