@@ -19,6 +19,9 @@ const COMPILE_DIR = "/compile";
 const KUBECTL_PATH = path.join(__dirname, "kubectl"); // ./
 const BOT_PORT = 8080;
 
+mongoose.connect(process.env.MONGO_URL);
+mongoose.Promise = global.Promise;
+
 const s3 = new AWS.S3({
   params: { Bucket: "mechmania2019" }
 });
@@ -61,9 +64,10 @@ async function main() {
       console.log(`Got message`);
       const id = message.content.toString();
 
-      console.log("Finding script in Mongoose");
-      const script = await Script.findOne({ key: id });
-
+      console.log(`Finding script ${id} in mongo`);
+      console.log(1);
+      const script = await Script.findOne({ key: id }).exec();
+      console.log(2);
       // clear the COMPILE_DIR
       console.log(`${id} - Cleaning ${COMPILE_DIR}`);
       await rimraf(COMPILE_DIR);
