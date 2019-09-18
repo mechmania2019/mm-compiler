@@ -18,7 +18,7 @@ const COMPILE_DIR = "/compile";
 const KUBECTL_PATH = path.join(__dirname, "kubectl"); // ./
 const BOT_PORT = 8080;
 
-mongoose.connect(process.env.MONGO_URL);
+mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
 mongoose.Promise = global.Promise;
 
 const s3 = new AWS.S3({
