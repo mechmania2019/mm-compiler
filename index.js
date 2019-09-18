@@ -62,7 +62,9 @@ async function main() {
 
       console.log(`Finding script ${id} in mongo`);
       console.log(1);
-      const script = await Script.findOne({ key: id }).exec();
+      const script = await Script.findOne({ key: id })
+        .populate("owner")
+        .exec();
       console.log(2);
       // clear the COMPILE_DIR
       console.log(`${id} - Cleaning ${COMPILE_DIR}`);
@@ -140,16 +142,18 @@ metadata:
   name: bot-${id}
   labels:
     app: bot
-    bot: ${id}
+    bot: "${id}"
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: bot
+      bot: "${id}"
   template:
     metadata:
       labels:
         app: bot
+        bot: "${id}"
     spec:
       containers:
       - name: bot
@@ -162,9 +166,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: bot-service-${id}
+  labels:
+    app: bot
+    bot: "${id}"
 spec:
   selector:
-    bot: ${id}
+    bot: "${id}"
   ports:
   - port: 80
     targetPort: ${BOT_PORT}
@@ -186,9 +193,17 @@ spec:
             "-o=jsonpath='{.spec.clusterIP}'"
           ]);
           console.log(`${id} - Got IP ${ip}. Saving to Mongo`);
-          script.ip = ip;
+          script.ip = ip.slice(1, -1); // remove the single quotes
           await script.save();
           console.log(`${id} - Saved IP to Mongo`);
+
+          // This bot is finally ready for others to start playing against
+          const team = script.owner;
+          team.latestScript = script.id;
+          await team.save();
+          console.log(
+            `${team.name} - Updated team latestScript (${team.latestScript})`
+          );
 
           // Notify Stanchion
           console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
