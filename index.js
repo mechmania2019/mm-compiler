@@ -6,7 +6,6 @@ const fs = require("fs");
 const path = require("path");
 const rimraf = promisify(require("rimraf"));
 const tar = require("tar");
-const through2 = require("through2");
 const amqp = require("amqplib");
 const execa = require("execa");
 const { Script } = require("mm-schemas")(mongoose);
@@ -26,11 +25,8 @@ const s3 = new AWS.S3({
   params: { Bucket: "mechmania2019" }
 });
 
-const getObject = promisify(s3.getObject.bind(s3));
 const upload = promisify(s3.upload.bind(s3));
 const mkdir = promisify(fs.mkdir);
-const chmod = promisify(fs.chmod);
-const readdir = promisify(fs.readdir);
 
 async function main() {
   // Login to docker
