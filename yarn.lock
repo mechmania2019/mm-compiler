@@ -252,10 +252,10 @@ mkdirp@^0.5.0:
   dependencies:
     minimist "0.0.8"
 
-mm-schemas@0.0.9:
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/mm-schemas/-/mm-schemas-0.0.9.tgz#4e7a6b94c74021546ecdcbfe778772d909413406"
-  integrity sha512-3JbPMnUIKSZGnuiGw+HAWLWw/J80zFuKlgwZiRVESoQN3pf4pZNSRBWHMgLSxygDKVC7ci8f5eJe9EnnIbhS2A==
+mm-schemas@0.0.10:
+  version "0.0.10"
+  resolved "https://registry.yarnpkg.com/mm-schemas/-/mm-schemas-0.0.10.tgz#69836ad7cf229449e1404a83db6b86a1ff181921"
+  integrity sha512-pNUSjCju/G57s8ERDKjWyjTUg8PIbmZTi39soEvLYA6hqVLke6kJo10hNQSIUd2XY2FypgnvQuzwcTlv8bFbUg==
   dependencies:
     cuid "2.1.6"
     mongoose "5.7.1"
