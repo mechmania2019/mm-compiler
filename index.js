@@ -158,6 +158,8 @@ spec:
       containers:
       - name: bot
         image: ${image}
+        ports:
+        - containerPort: ${BOT_PORT}
         env:
           - name: PORT
             value: "${BOT_PORT}"
