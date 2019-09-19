@@ -1,4 +1,11 @@
-FROM wernight/kubectl as kubectl
+FROM alpine:3.8 as kubectl
+ADD https://storage.googleapis.com/kubernetes-release/release/v1.15.3/bin/linux/amd64/kubectl /usr/local/bin/kubectl
+RUN set -x && \
+    apk add --no-cache curl ca-certificates && \
+    chmod +x /usr/local/bin/kubectl && \
+    \
+    # Basic check it works.
+    kubectl version --client
 FROM mhart/alpine-node:10 as base
 WORKDIR /usr/src
 COPY package.json yarn.lock /usr/src/

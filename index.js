@@ -18,7 +18,11 @@ const COMPILE_DIR = "/compile";
 const KUBECTL_PATH = path.join(__dirname, "kubectl"); // ./
 const BOT_PORT = 8080;
 
-mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+mongoose.connect(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useCreateIndex: true,
+  useUnifiedTopology: true
+});
 mongoose.Promise = global.Promise;
 
 const s3 = new AWS.S3({
@@ -60,12 +64,10 @@ async function main() {
       console.log(`Got message`);
       const id = message.content.toString();
 
-      console.log(`Finding script ${id} in mongo`);
-      console.log(1);
+      console.log(`${id} - Finding script ${id} in mongo`);
       const script = await Script.findOne({ key: id })
         .populate("owner")
         .exec();
-      console.log(2);
       // clear the COMPILE_DIR
       console.log(`${id} - Cleaning ${COMPILE_DIR}`);
       await rimraf(COMPILE_DIR);
@@ -160,6 +162,17 @@ spec:
         image: ${image}
         ports:
         - containerPort: ${BOT_PORT}
+        livenessProbe:
+          initialDelaySeconds: 2
+          periodSeconds: 5
+          httpGet:
+            path: /health
+            port: ${BOT_PORT}
+        readinessProbe:
+          initialDelaySeconds: 5
+          httpGet:
+            path: /health
+            port: ${BOT_PORT}
         env:
           - name: PORT
             value: "${BOT_PORT}"
@@ -175,7 +188,7 @@ spec:
   selector:
     bot: "${id}"
   ports:
-  - port: 80
+  - port: 8080
     targetPort: ${BOT_PORT}
     protocol: TCP
 `;
@@ -187,7 +200,21 @@ spec:
           console.warn(kubectlErr);
           console.log(`Successfully started kubernetes deployment ${image}`);
 
-          console.log("Getting IP address");
+          console.log("Waiting for deployment to be available");
+
+          const waitProc = execa(KUBECTL_PATH, [
+            "wait",
+            "--for=condition=Ready",
+            "--timeout=600s",
+            "pod",
+            "-l",
+            `bot=${id}`
+          ]);
+          waitProc.stdout.pipe(process.stdout);
+          waitProc.stderr.pipe(process.stderr);
+          await waitProc;
+
+          console.log(`${id} - Getting IP address of service`);
           const { stdout: ip } = await execa(KUBECTL_PATH, [
             "get",
             "service",
@@ -204,7 +231,7 @@ spec:
           team.latestScript = script.id;
           await team.save();
           console.log(
-            `${team.name} - Updated team latestScript (${team.latestScript})`
+            `${id} - ${team.name} - Updated team latestScript (${team.latestScript})`
           );
 
           // Notify Stanchion
