@@ -85,43 +85,26 @@ async function main() {
         const image = `gcr.io/mechmania2017/${id}`;
         // Compile the script
         console.log(`${id} - Compiling files at ${COMPILE_DIR}`);
-        // TODO: Handle errors
-        let stdout = "";
-        let stderr = "";
+        let all = "";
         let success = false;
         try {
-          const proc = await execa("docker", [
-            "build",
-            COMPILE_DIR,
-            "-t",
-            image
-          ]);
-          stdout = proc.stdout;
-          stderr = proc.stderr;
+          const proc = execa("docker", ["build", COMPILE_DIR, "-t", image], {
+            all: true
+          });
+          proc.stdout.pipe(process.stdout);
+          proc.stderr.pipe(process.stderr);
+          all = (await proc).all;
           success = true;
         } catch (e) {
-          stdout = e.stdout;
+          all = e.all;
           success = false;
-          stderr = e.stderr;
         }
-        console.log(stdout);
-        console.warn(stderr);
-        const body = `
-        ==================================================
-          
-        stdout:
-        ${stdout}
-          
-        =================================================== 
-          
-        stderr:
-        ${stderr}
-        `;
+        console.log(all);
 
         console.log(`${id} - Upload logs to s3 (${id})`);
         const data = await upload({
           Key: `compiled/${id}`,
-          Body: body
+          Body: all
         });
         console.log(`${id} - Uploaded logs to s3 (${data.Location})`);
 
@@ -202,43 +185,49 @@ spec:
 
           console.log("Waiting for deployment to be available");
 
-          const waitProc = execa(KUBECTL_PATH, [
-            "wait",
-            "--for=condition=Ready",
-            "--timeout=600s",
-            "pod",
-            "-l",
-            `bot=${id}`
-          ]);
-          waitProc.stdout.pipe(process.stdout);
-          waitProc.stderr.pipe(process.stderr);
-          await waitProc;
+          try {
+            const waitProc = execa(KUBECTL_PATH, [
+              "wait",
+              "--for=condition=Ready",
+              "--timeout=30s",
+              "pod",
+              "-l",
+              `bot=${id}`
+            ]);
+            waitProc.stdout.pipe(process.stdout);
+            waitProc.stderr.pipe(process.stderr);
+            await waitProc;
 
-          console.log(`${id} - Getting IP address of service`);
-          const { stdout: ip } = await execa(KUBECTL_PATH, [
-            "get",
-            "service",
-            `bot-service-${id}`,
-            "-o=jsonpath='{.spec.clusterIP}'"
-          ]);
-          console.log(`${id} - Got IP ${ip}. Saving to Mongo`);
-          script.ip = ip.slice(1, -1); // remove the single quotes
-          await script.save();
-          console.log(`${id} - Saved IP to Mongo`);
+            console.log(`${id} - Getting IP address of service`);
+            const { stdout: ip } = await execa(KUBECTL_PATH, [
+              "get",
+              "service",
+              `bot-service-${id}`,
+              "-o=jsonpath='{.spec.clusterIP}'"
+            ]);
+            console.log(`${id} - Got IP ${ip}. Saving to Mongo`);
+            script.ip = ip.slice(1, -1); // remove the single quotes
+            await script.save();
+            console.log(`${id} - Saved IP to Mongo`);
 
-          // This bot is finally ready for others to start playing against
-          const team = script.owner;
-          team.latestScript = script.id;
-          await team.save();
-          console.log(
-            `${id} - ${team.name} - Updated team latestScript (${team.latestScript})`
-          );
-
-          // Notify Stanchion
-          console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
-          ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), {
-            persistent: true
-          });
+            // This bot is finally ready for others to start playing against
+            const team = script.owner;
+            team.latestScript = script.id;
+            await team.save();
+            console.log(
+              `${id} - ${team.name} - Updated team latestScript (${team.latestScript})`
+            );
+            // Notify Stanchion
+            console.log(`${id} - Notifying ${STANCHION_QUEUE}`);
+            ch.sendToQueue(STANCHION_QUEUE, Buffer.from(id), {
+              persistent: true
+            });
+          } catch (e) {
+            console.error(
+              "Encountered an error, so we'll acknowledge the message but we're not scheduling game with it or setting it as latest script"
+            );
+            console.error(e);
+          }
         }
 
         ch.ack(message);
