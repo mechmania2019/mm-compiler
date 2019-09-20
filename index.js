@@ -212,6 +212,44 @@ spec:
 
             // This bot is finally ready for others to start playing against
             const team = script.owner;
+
+            // Kill oldest script
+            if (!!team.latestScript) {
+              const oldScript = await Script.findOne({_id: team.latestScript});
+
+              console.log(`Killing ${team.name}'s older script ${oldScript.key}`);
+
+              if (!!oldScript.ip) {
+                console.log(`\nRemoving ${oldScript.ip} ip from script ${oldScript.key}\n`);
+                oldScript.ip = undefined;
+                await oldScript.save();
+              }
+        
+              const killDepProc = await execa(KUBECTL_PATH, 
+                [  
+                  "delete", 
+                  "deployment",
+                  "-l",
+                  `bot=${oldScript.key}`
+                ]);
+        
+              console.log(killDepProc.stdout);
+              console.warn(killDepProc.stderr);
+        
+              console.log(`Removing old service for ${oldScript.key}`);
+        
+              const killServProc = await execa(KUBECTL_PATH, 
+                [  
+                  "delete", 
+                  "service",
+                  "-l",
+                  `bot=${oldScript.key}`
+                ]);
+        
+              console.log(killServProc.stdout);
+              console.warn(killServProc.stderr);
+            }
+
             team.latestScript = script.id;
             await team.save();
             console.log(
