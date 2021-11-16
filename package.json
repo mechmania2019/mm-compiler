@@ -6,7 +6,7 @@
   },
   "dependencies": {
     "amqplib": "0.5.2",
-    "aws-sdk": "2.203.0",
+    "aws-sdk": "2.814.0",
     "execa": "2.0.4",
     "mm-schemas": "0.0.10",
     "mongoose": "5.7.1",
